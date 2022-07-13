@@ -542,7 +542,7 @@ class ThirdPersonCameraDemo {
 
     this._scene = new THREE.Scene();
 
-    let light = new THREE.DirectionalLight(0xFFFFFF, 1.0);
+    let light = new THREE.DirectionalLight(0xFFFFFF, 1);
     light.position.set(-100, 100, 100);
     light.target.position.set(0, 0, 0);
     light.castShadow = true;
@@ -559,7 +559,7 @@ class ThirdPersonCameraDemo {
     light.shadow.camera.bottom = -50;
     this._scene.add(light);
 
-    light = new THREE.AmbientLight(0xFFFFFF, 0.25);
+    light = new THREE.AmbientLight(0xffa95c, 1);
     this._scene.add(light);
 
     const loader = new THREE.CubeTextureLoader();
@@ -574,13 +574,18 @@ class ThirdPersonCameraDemo {
     texture.encoding = THREE.sRGBEncoding;
     this._scene.background = texture;
 
+    const textureLoader = new THREE.TextureLoader().load( "./resources/asphalt.jpg");
+
     const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(100, 100, 10, 10),
-        new THREE.MeshStandardMaterial({
-            color: 0x808080,
-          }));
-    plane.castShadow = false;
-    plane.receiveShadow = true;
+        new THREE.PlaneGeometry(200, 200, 10, 10),
+        new THREE.MeshPhongMaterial( {
+          map: textureLoader,
+				} ),
+    );
+
+    plane.castShadow = true;
+    plane.receiveShadow = false;
+    plane.wireframe = true;
     plane.rotation.x = -Math.PI / 2;
     this._scene.add(plane);
 
