@@ -70,6 +70,8 @@ class BasicCharacterController {
       loader.load('run.fbx', (a) => { _OnLoad('run', a); });
       loader.load('bro_idle.fbx', (a) => { _OnLoad('bro_idle', a); });
       loader.load('breakdance.fbx', (a) => { _OnLoad('breakdance', a); });
+      loader.load('backward.fbx', (a) => { _OnLoad('backward', a); });
+      
     });
   }
 
@@ -273,6 +275,8 @@ class CharacterFSM extends FiniteStateMachine {
     this._AddState('walk', WalkState);
     this._AddState('run', RunState);
     this._AddState('breakdance', DanceState);
+    this._AddState('backward', backwardState);
+
   }
 };
 
@@ -375,10 +379,56 @@ class WalkState extends State {
   }
 
   Update(timeElapsed, input) {
-    if (input._keys.forward || input._keys.backward) {
+    if (input._keys.forward) {
       if (input._keys.shift) {
         this._parent.SetState('run');
       }
+      return;
+    }
+
+    this._parent.SetState('bro_idle');
+  }
+};
+
+class backwardState extends State {
+  constructor(parent) {
+    super(parent);
+  }
+
+  get Name() {
+    return 'backward';
+  }
+
+  Enter(prevState) {
+    const curAction = this._parent._proxy._animations['backward'].action;
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+
+      curAction.enabled = true;
+
+      console.log(prevState, 'prev');
+
+      if (prevState.Name == 'run') {
+        const ratio = curAction.getClip().duration / prevAction.getClip().duration;
+        curAction.time = prevAction.time * ratio;
+      } else {
+        curAction.time = 0.0;
+        curAction.setEffectiveTimeScale(1.0);
+        curAction.setEffectiveWeight(1.0);
+      }
+
+      curAction.crossFadeFrom(prevAction, 0.5, true);
+      curAction.play();
+    } else {
+      curAction.play();
+    }
+  }
+
+  Exit() {
+  }
+
+  Update(timeElapsed, input) {
+    if (input._keys.backward) {
       return;
     }
 
@@ -423,7 +473,11 @@ class RunState extends State {
   }
 
   Update(timeElapsed, input) {
-    if (input._keys.forward || input._keys.backward) {
+    if (input._keys.backward) {
+      if (!input._keys.shift) {
+        this._parent.SetState('backward');
+      }
+    } else if (input._keys.forward) {
       if (!input._keys.shift) {
         this._parent.SetState('walk');
       }
@@ -463,8 +517,10 @@ class IdleState extends State {
   }
 
   Update(_, input) {
-    if (input._keys.forward || input._keys.backward) {
+    if (input._keys.forward ) {
       this._parent.SetState('walk');
+    } else if (input._keys.backward) {
+      this._parent.SetState('backward');
     } else if (input._keys.space) {
       this._parent.SetState('breakdance');
     }
@@ -639,7 +695,7 @@ class ThirdPersonCameraDemo {
       this._controls.Update(timeElapsedS);
     }
 
-    this._thirdPersonCamera.Update(timeElapsedS);
+    this._thirdPersonCamera.Update(timeElapsedS+0.01);
   }
 }
 
