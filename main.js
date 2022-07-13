@@ -71,7 +71,10 @@ class BasicCharacterController {
       loader.load('bro_idle.fbx', (a) => { _OnLoad('bro_idle', a); });
       loader.load('breakdance.fbx', (a) => { _OnLoad('breakdance', a); });
       loader.load('backward.fbx', (a) => { _OnLoad('backward', a); });
-      
+      loader.load('punch.fbx', (a) => { _OnLoad('punch', a); });
+      loader.load('kick.fbx', (a) => { _OnLoad('kick', a); });
+      loader.load('salute.fbx', (a) => { _OnLoad('salute', a); });
+
     });
   }
 
@@ -112,10 +115,22 @@ class BasicCharacterController {
 
     const acc = this._acceleration.clone();
     if (this._input._keys.shift) {
-      acc.multiplyScalar(2.0);
+      acc.multiplyScalar(4);
     }
 
     if (this._stateMachine._currentState.Name == 'breakdance') {
+      acc.multiplyScalar(0.0);
+    }
+
+    if (this._stateMachine._currentState.Name == 'punch') {
+      acc.multiplyScalar(0.0);
+    }
+
+    if (this._stateMachine._currentState.Name == 'kick') {
+      acc.multiplyScalar(0.0);
+    }
+    
+    if (this._stateMachine._currentState.Name == 'salute') {
       acc.multiplyScalar(0.0);
     }
 
@@ -176,9 +191,17 @@ class BasicCharacterControllerInput {
       right: false,
       space: false,
       shift: false,
+      f: false
     };
+    this._button = {
+      "left-click": false,
+      "right-click": false
+    }
     document.addEventListener('keydown', (e) => this._onKeyDown(e), false);
     document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
+    document.addEventListener('mousedown', (e) => this._onMouseDown(e), false);
+    document.addEventListener('mouseup', (e) => this._onMouseUp(e), false);
+    document.addEventListener('contextmenu', event => event.preventDefault());
   }
 
   _onKeyDown(event) {
@@ -201,6 +224,9 @@ class BasicCharacterControllerInput {
       case 16: // SHIFT
         this._keys.shift = true;
         break;
+      case 70: // f
+      this._keys.f = true;
+      break;
     }
   }
 
@@ -224,9 +250,35 @@ class BasicCharacterControllerInput {
       case 16: // SHIFT
         this._keys.shift = false;
         break;
+      case 70: // f
+      this._keys.f = false;
+      break;
     }
   }
+  _onMouseDown(event){
+    switch(event.button) {
+      case 0: // left-click
+        this._button['left-click'] = true;
+        break;
+      case 2: // right-click
+        this._button['right-click'] = true;
+        break;
+    }
+  };
+
+  _onMouseUp(event){
+    switch(event.button) {
+      case 0: // left-click
+        this._button['left-click'] = false;
+        break;
+      case 2: // right-click
+        this._button['right-click'] = false;
+        break;
+    }
+  };
 };
+
+
 
 
 class FiniteStateMachine {
@@ -275,8 +327,10 @@ class CharacterFSM extends FiniteStateMachine {
     this._AddState('walk', WalkState);
     this._AddState('run', RunState);
     this._AddState('breakdance', DanceState);
-    this._AddState('backward', backwardState);
-
+    this._AddState('backward', BackwardState);
+    this._AddState('punch', PunchState);
+    this._AddState('kick', KickState);
+    this._AddState('salute', SaluteState);
   }
 };
 
@@ -382,7 +436,7 @@ class WalkState extends State {
     if (input._keys.forward) {
       if (input._keys.shift) {
         this._parent.SetState('run');
-      }
+      } 
       return;
     }
 
@@ -390,7 +444,7 @@ class WalkState extends State {
   }
 };
 
-class backwardState extends State {
+class BackwardState extends State {
   constructor(parent) {
     super(parent);
   }
@@ -523,10 +577,168 @@ class IdleState extends State {
       this._parent.SetState('backward');
     } else if (input._keys.space) {
       this._parent.SetState('breakdance');
+    } else if (input._button['left-click']){
+      this._parent.SetState('punch');
+    } else if (input._button['right-click']){
+      this._parent.SetState('kick');
+    } else if (input._keys.f){
+      this._parent.SetState('salute');
     }
   }
 };
 
+
+class PunchState extends State {
+  constructor(parent) {
+    super(parent);
+
+    this._FinishedCallback = () => {
+      this._Finished();
+    }
+  }
+
+  get Name() {
+    return 'punch';
+  }
+
+  Enter(prevState) {
+    console.log("sss");
+
+    const curAction = this._parent._proxy._animations['punch'].action;
+    const mixer = curAction.getMixer();
+    mixer.addEventListener('finished', this._FinishedCallback);
+
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+
+      curAction.reset();  
+      curAction.setLoop(THREE.LoopOnce, 1);
+      curAction.clampWhenFinished = true;
+      curAction.crossFadeFrom(prevAction, 0.2, true);
+      curAction.play();
+    } else {
+      curAction.play();
+    }
+  }
+
+  _Finished() {
+    this._Cleanup();
+    this._parent.SetState('bro_idle');
+  }
+
+  _Cleanup() {
+    const action = this._parent._proxy._animations['punch'].action;
+    
+    action.getMixer().removeEventListener('finished', this._CleanupCallback);
+  }
+
+  Exit() {
+    this._Cleanup();
+  }
+
+  Update(_) {
+  }
+};
+
+class KickState extends State {
+  constructor(parent) {
+    super(parent);
+
+    this._FinishedCallback = () => {
+      this._Finished();
+    }
+  }
+
+  get Name() {
+    return 'kick';
+  }
+
+  Enter(prevState) {
+    const curAction = this._parent._proxy._animations['kick'].action;
+    const mixer = curAction.getMixer();
+    mixer.addEventListener('finished', this._FinishedCallback);
+
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+
+      curAction.reset();  
+      curAction.setLoop(THREE.LoopOnce, 1);
+      curAction.clampWhenFinished = true;
+      curAction.crossFadeFrom(prevAction, 0.2, true);
+      curAction.play();
+    } else {
+      curAction.play();
+    }
+  }
+
+  _Finished() {
+    this._Cleanup();
+    this._parent.SetState('bro_idle');
+  }
+
+  _Cleanup() {
+    const action = this._parent._proxy._animations['kick'].action;
+    
+    action.getMixer().removeEventListener('finished', this._CleanupCallback);
+  }
+
+  Exit() {
+    this._Cleanup();
+  }
+
+  Update(_) {
+  }
+};
+
+class SaluteState extends State {
+  constructor(parent) {
+    super(parent);
+
+    this._FinishedCallback = () => {
+      this._Finished();
+    }
+  }
+
+  get Name() {
+    return 'salute';
+  }
+
+  Enter(prevState) {
+    const curAction = this._parent._proxy._animations['salute'].action;
+    const mixer = curAction.getMixer();
+    mixer.addEventListener('finished', this._FinishedCallback);
+
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+
+      curAction.reset();  
+      curAction.setLoop(THREE.LoopOnce, 1);
+      curAction.clampWhenFinished = true;
+      curAction.crossFadeFrom(prevAction, 0.2, true);
+      curAction.play();
+    } else {
+      curAction.play();
+    }
+  }
+
+  _Finished() {
+    this._Cleanup();
+    this._parent.SetState('bro_idle');
+  }
+
+  _Cleanup() {
+    const action = this._parent._proxy._animations['salute'].action;
+    
+    action.getMixer().removeEventListener('finished', this._CleanupCallback);
+  }
+
+  Exit() {
+    this._Cleanup();
+  }
+
+  Update(_) {
+  }
+};
 
 class ThirdPersonCamera {
   constructor(params) {
