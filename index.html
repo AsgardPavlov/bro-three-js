@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Three.JS Tutorial: Character Controller</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="base.css">
+</head>
+<body>
+
+  <div class="progress-bar-container">
+    <img
+      class="rk-logo"
+      for="progress-bar"
+      src="resources/images/rk-games-logo.png"
+      />
+    <progress id="progress-bar" value="0" max="100">
+    </progress>
+  </div>
+
+  <img
+    id="player"
+    class="music-player black-and-white"
+    src="resources/images/gta-sa-icon.png"
+  />
+  <audio src="resources/music/gta-theme.mp3" id="audio"></audio>
+  <audio src="resources/music/gta-spray.mp3" id="spray-sounds"></audio>
+
+  <script src="index.js" type="module"></script>
+  <script>
+    const audio = document.getElementById('audio');
+    const player = document.getElementById('player');
+    
+    function playSong() {
+      player.classList.remove('black-and-white');
+      audio.play()
+    }
+
+    function pauseSong() {
+      player.classList.add('black-and-white');
+      audio.pause()
+    }
+
+    player.addEventListener('click', () => {
+      const isPlaying = !player.classList.contains('black-and-white');
+
+      if (isPlaying) {
+        pauseSong();
+      } else {
+        playSong();
+      }
+    });
+  </script>
+</body>
+</html>
