@@ -55,12 +55,6 @@ class BasicCharacterController {
       const progressBar = document.getElementById('progress-bar');
       const spraySounds = document.getElementById('spray-sounds')
 
-      this._manager.onProgress = (url, loaded, total) => {
-        window.focus();
-        spraySounds.play();
-        progressBar.value = (loaded / total) * 100;
-      }
-
       const progressBarContainer = document.querySelector('.progress-bar-container');
 
       this._manager = new THREE.LoadingManager();
@@ -68,6 +62,12 @@ class BasicCharacterController {
         this._stateMachine.SetState('bro_idle');
         progressBarContainer.remove();
         spraySounds.pause();
+      }
+
+      this._manager.onProgress = (url, loaded, total) => {
+        progressBar.value = (loaded / total) * 100;
+        window.focus();
+        spraySounds.play();
       }
 
       const _OnLoad = (animName, anim) => {
