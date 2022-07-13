@@ -30,7 +30,8 @@ class BasicCharacterController {
     this._animations = {};
     this._input = new BasicCharacterControllerInput();
     this._stateMachine = new CharacterFSM(
-        new BasicCharacterControllerProxy(this._animations));
+        new BasicCharacterControllerProxy(this._animations)
+    );
 
     this._LoadModels();
   }
@@ -50,9 +51,24 @@ class BasicCharacterController {
       this._mixer = new THREE.AnimationMixer(this._target);
 
       this._manager = new THREE.LoadingManager();
+
+      const progressBar = document.getElementById('progress-bar');
+      const spraySounds = document.getElementById('spray-sounds')
+
+      this._manager.onProgress = (url, loaded, total) => {
+        window.focus();
+        spraySounds.play();
+        progressBar.value = (loaded / total) * 100;
+      }
+
+      const progressBarContainer = document.querySelector('.progress-bar-container');
+
+      this._manager = new THREE.LoadingManager();
       this._manager.onLoad = () => {
         this._stateMachine.SetState('bro_idle');
-      };
+        progressBarContainer.remove();
+        spraySounds.pause();
+      }
 
       const _OnLoad = (animName, anim) => {
         const clip = anim.animations[0];
@@ -767,8 +783,6 @@ class ThirdPersonCamera {
     const idealOffset = this._CalculateIdealOffset();
     const idealLookat = this._CalculateIdealLookat();
 
-    // const t = 0.05;
-    // const t = 4.0 * timeElapsed;
     const t = 1.0 - Math.pow(0.001, timeElapsed);
 
     this._currentPosition.lerp(idealOffset, t);
@@ -845,7 +859,7 @@ class ThirdPersonCameraDemo {
     const textureLoader = new THREE.TextureLoader().load( "./resources/asphalt.jpg");
 
     const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(200, 200, 10, 10),
+        new THREE.PlaneGeometry(500, 500, 10, 10),
         new THREE.MeshPhongMaterial( {
           map: textureLoader,
 				} ),
